@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block content %}
+{% from "macros.html" import render_field %}
+<section> 
+    <h3>Hello again {{active_user.username}}, welcome to your home page </h3>
+</section>
+    {% with pgs = posts %}
+        {% include "list_pages.html" %}
+    {% endwith %}
+Add a new post! Start with the name -  
+<form action="" method="post">
+    {{form.hidden_tag()}}
+    <table>
+        {{ render_field(form.url, size=50)}}
+        <tr class= "submit">
+            <td></td>
+        <td><button type='submit'class="btn btn-success">get started</button></td>
+        </tr>
+    </table>
+</form>
+
+{% endblock %}

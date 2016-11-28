@@ -1,0 +1,17 @@
+# humanstxt.org/
+# The humans responsible & technology colophon
+
+# TEAM
+
+    <name> Vincent Buscarello <role> dude <twitter> eventually
+
+# THANKS
+
+    <name> Jesus
+    <name> galvanize meetups
+
+# TECHNOLOGY COLOPHON
+
+    HTML5, CSS3
+    jQuery, Modernizr
+    python, flasks
