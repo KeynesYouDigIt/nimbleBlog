@@ -163,6 +163,9 @@ def post_not_found(e):
 def unauth(e):
     return render_template('401.html'), 401
 
+@app.errorhandler(500)
+def unauth(e):
+    return render_template('500.html', error = e), 500
 
 @app.context_processor
 def inject_tags():
