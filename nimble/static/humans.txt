@@ -3,15 +3,16 @@
 
 # TEAM
 
-    <name> Vincent Buscarello <role> dude <twitter> eventually
+    <name> Vincent Buscarello <role> Developer <twitter> @altereeeeego
 
 # THANKS
 
     <name> Jesus
     <name> galvanize meetups
+    <name> Udacity
 
 # TECHNOLOGY COLOPHON
 
     HTML5, CSS3
     jQuery, Modernizr
-    python, flasks
+    python, flask

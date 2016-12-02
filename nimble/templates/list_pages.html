@@ -2,10 +2,11 @@
 	{% for page in pgs %}
 	<hr>
 	<a class="header" href=" /{{page.user.username + page.url}}">
-		<h4 class="description">
+		<font size=4>
 		{{page.url | truncate(30, killwords=True)}}
-		</h4>
+		</font>
 	</a>
+	<br>
 		by {{ page.user.username }}
 	<br><br>
 	<span class="tags">
