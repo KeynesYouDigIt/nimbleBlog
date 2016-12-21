@@ -7,4 +7,7 @@ from google.appengine.ext import vendor
 # insert `lib` as a site directory so our `main` module can load
 # third-party libraries, and override built-ins with newer
 # versions.
-vendor.add('nibmle/lib')
+try:
+    vendor.add('nibmle\lib')
+except:
+    vendor.add('lib')
