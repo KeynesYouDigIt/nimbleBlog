@@ -4,7 +4,7 @@ threadsafe: yes
 
 handlers:
 - url: .*
-  script: db_switch.py runserver
+  script: main.app
 
 libraries:
 - name: jinja2

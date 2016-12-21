@@ -2,6 +2,7 @@
 
 #switch on the app on, has funcs to reset the db
 
+import logging
 from nimble import *
 from nimble.models import *
 from flask_script import Manager, prompt_bool
