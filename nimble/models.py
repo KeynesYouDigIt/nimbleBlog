@@ -2,7 +2,6 @@
 which are passed to the router in views.py to take form data and store it.
 
 configurations are in init.py and initial tasks for setup are in db_switch.py"""
-from sqlalchemy import desc
 from nimble import db
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -49,14 +48,6 @@ class Post(db.Model):
         secondary=likes,
         lazy='joined',
         backref = db.backref('likes', lazy='dynamic'))
-
-    @staticmethod
-    def newest(num):
-        return post.query.order_by(desc(post.date)).limit(num)
-
-    @staticmethod
-    def get_newest(num):
-        return post.query.order_by(desc(post.id)).limit(num)
 
     @property
     def tags(self):
