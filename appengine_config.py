@@ -9,5 +9,5 @@ from google.appengine.ext import vendor
 # versions.
 try:
     vendor.add('nibmle\lib')
-except:
-    vendor.add('lib')
+except as err:
+    print err
