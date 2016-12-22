@@ -17,7 +17,7 @@ import os
 # third-party libraries, and override built-ins with newer
 # versions.
 print os.path
-print os.pat.realpath
+print os.path.realpath
 print os.path.realpath(__file__)
 
 print os.path.join(os.path.dirname(os.path.realpath(__file__)), 'lib')
