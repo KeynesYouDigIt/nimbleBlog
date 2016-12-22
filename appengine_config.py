@@ -16,9 +16,13 @@ import os
 # insert `lib` as a site directory so our `main` module can load
 # third-party libraries, and override built-ins with newer
 # versions.
+print os.path
+print os.pat.realpath
 print os.path.realpath(__file__)
 
 print os.path.join(os.path.dirname(os.path.realpath(__file__)), 'lib')
 
-vendor.add(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'lib'))
-#vendor.add('lib')
+#vendor.add(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'lib'))
+
+vendor.add('lib')
+print 'I am the line after adding lib, it should have worked'
