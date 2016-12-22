@@ -12,5 +12,5 @@ libraries:
 - name: markupsafe
   version: "0.15"
 
-# env_variables:
-#  CLOUDSDK_CONFIG: /
+env_variables:
+  CLOUDSDK_CONFIG: /
