@@ -335,8 +335,8 @@ class SQLiteDialect_pysqlite(SQLiteDialect):
         except ImportError as e:
             try:
                 from sqlite3 import dbapi2 as sqlite  # try 2.5+ stdlib name.
-            except ImportError:
-                raise e
+            except ImportError as ee:
+                raise ee
         return sqlite
 
     @classmethod
