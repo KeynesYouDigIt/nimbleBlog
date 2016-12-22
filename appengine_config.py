@@ -23,5 +23,6 @@ sys.path.insert(0,'./lib')
 print sys.path
 
 from google.appengine.ext import vendor
+print dir(vendor)
 vendor.add('lib')
 print 'I am the line after adding lib, it should have worked'
