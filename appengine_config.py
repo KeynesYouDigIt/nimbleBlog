@@ -18,12 +18,10 @@ import sys
 # insert `lib` as a site directory so our `main` module can load
 # third-party libraries, and override built-ins with newer
 # versions.
-print os.path
-print os.path.realpath
-print os.path.realpath(__file__)
-
-print os.path.join(os.path.dirname(os.path.realpath(__file__)), 'lib')
 
 sys.path.insert(0,'./lib')
+print sys.path
+
+from google.appengine.ext import vendor
 vendor.add('lib')
 print 'I am the line after adding lib, it should have worked'
