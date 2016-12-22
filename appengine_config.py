@@ -11,16 +11,16 @@
 print 'running app  config yaya!'
 
 from google.appengine.ext import vendor
-import os
-import sys
+# import os
+# import sys
 
 # import vendor
 # insert `lib` as a site directory so our `main` module can load
 # third-party libraries, and override built-ins with newer
 # versions.
 
-sys.path.insert(0,'./lib')
-print sys.path
+# sys.path.insert(0,'./lib')
+# print sys.path
 
 from google.appengine.ext import vendor
 print dir(vendor)
