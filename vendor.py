@@ -41,11 +41,16 @@ def add(folder, index=1):
 
   # Check if the path contains a virtualenv.
   site_dir = os.path.join(folder, 'lib', 'python' + sys.version[:3], 'site-packages')
+  print 'site dir in vendor'
+  print site_dir
   if os.path.exists(site_dir):
     folder = site_dir
   # Otherwise it's just a normal path, make it absolute.
   else:
     folder = os.path.join(os.path.dirname(__file__), folder)
+
+  print 'folder is Now'
+  print folder
 
   # Use site.addsitedir() because it appropriately reads .pth
   # files for namespaced packages. Unfortunately, there's not an
