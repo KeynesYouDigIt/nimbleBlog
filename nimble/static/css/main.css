@@ -8,9 +8,18 @@ h1 {
     font-size: 110%
 }
 
-a:before,
 a {
-    content: ">" ;
+  content: ">" ;
+  background-color: #111;
+  color: #FFFFFF; /*#337AB7;*/
+  padding: 3px 7px 7px 3px;
+}
+
+a:hover,
+a:focus {
+  color: #111 !important;
+  background-color: #FFFFFF !important;
+  text-decoration: underline !important;
 }
 
 button,
@@ -46,8 +55,8 @@ form {
 
 /* The side navigation menu */
 .sidebar {
-    height: 190px;
-    width: 180px;
+    height: 210px;
+    width: 200px;
     padding: 35px;
     position: fixed;
     background-color: #111;

@@ -8,8 +8,7 @@
         <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
         <title>nmb</title>
         <meta name="description" content="">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        
+        <meta name="viewport" content="width=device-width, initial-scale=1">        
         {% block styles %}
           <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.css') }}">
           <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
@@ -23,16 +22,20 @@
     </head>
     {% block sidebar %}
     <div class='sidebar'>
-      <font size=4>
-      {% if current_user.is_authenticated %}
+      {% if config.current_user.username != '83928482956' %}
+      <em> logged in.</em><br><br>
+       <font size=3>
         <a href={{ url_for('logout') }}> logout </a>
         <br><br>
-        <a href={{ url_for('to_start') }}> posts </a> 
+        <a href={{ url_for('to_start') }}>  my posts </a> 
       {% else %}
+      <font size=3>
         <a href={{ url_for('login') }}> login </a>
         <br><br>
         <a href={{ url_for('sign_up') }}> sign up </a>
       {% endif %}
+      <br><br>
+      <a href={{ url_for('all_tags') }}> posts by tag </a>
       </font>
     </div>
     {% endblock %}

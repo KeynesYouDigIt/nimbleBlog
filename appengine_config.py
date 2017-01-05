@@ -2,7 +2,7 @@
 
 print 'running app  config yaya!'
 
-import vendor
+from google.appengine.ext import vendor
 vendor.add('lib')
 print 'I am the line after adding lib, it should have worked'
 import os

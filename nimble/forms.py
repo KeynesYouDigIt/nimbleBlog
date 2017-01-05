@@ -48,7 +48,9 @@ class SignupForm(Form):
                     Email(message='dude, valid email please.')])
 
     def validate_username(self,username_field):
-        if User.query.filter_by(username=username_field.data).first():
+        print 'check for user name'
+        print User.gql("WHERE  username = :username", username = username_field.data).get()
+        if User.gql("WHERE  username = :username", username = username_field.data).get():
             raise ValidationError('somebody beat you to that username.'+\
                 'Common, be original!')
 
@@ -86,7 +88,7 @@ class DataForm(Form):
     url = StringField('enter the name here for the post   _> &nbsp', 
         [InputRequired(message='dude. put something here. anything.')])
 
-    content = TextAreaField('enter your starting content   ')
+    content = TextAreaField('enter your post! <br>   ')
 
     tags = StringField('Tag it up! (or dont) <br><br>'+\
         'seperate each tag with a comma<br><br>'+\
@@ -94,8 +96,8 @@ class DataForm(Form):
         'pick from the list or type a new one to submit it'+\
         '</font></em>&nbsp  &nbsp', 
         validators = [
-            Length(2,25, \
-            message='thats too long. keep it within 25 chars.'),
+            Length(2,225, \
+            message='thats too long. keep it within 225 chars.'),
             Optional(),
             Regexp('^[A-Za-z0-9_]{2,}', 
             message='tags must be letters, numbers, and _s')])

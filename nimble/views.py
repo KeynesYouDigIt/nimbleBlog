@@ -5,22 +5,25 @@ Jinja2 templates stored in the templates folder."""
 
 
 from flask import render_template, url_for, request, redirect, flash, abort
-from flask_login import login_required, login_user, logout_user, current_user
+import utils
 from nimble import app
 from forms import *
 from models import *
-
 
 @app.route('/login', methods=['GET','POST'])
 def login():
     # standard login page.
     form = LoginForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(username=form.username.data).first()
+        user = User.gql("WHERE username = :u", u = form.username.data).get()
+        print 'user'
+        print user
         if user is not None and user.check_password(form.password.data):
-            login_user(user, form.remember_me.data)
-            flash (' welcome {}, you can now edit posts.'.format(user.username))
-            return redirect(request.args.get('next') or url_for('starter'))
+            utils.login_cookie_bake(user)
+            print 'loginresult'
+            utils.session
+            # flash (' welcome {}, you can now edit posts.'.format(user.username))
+            return redirect(url_for('starter', username = user.username))
         else:
             # vague error does not let the user know if username attempted exists.
             flash('!!: nope, pwd or username is wrong.')
@@ -30,11 +33,11 @@ def login():
         hfour='welcome back yo.')
 
 
-@app.route('/logout')
+@app.route('/logout/')
 def logout():
     # standard logout page
     flash (' thanks for hanging out! you are now in anon mode (view only).')
-    logout_user()
+    utils.logout_user()
     return    redirect(request.args.get('next') or url_for('login'))
 
 
@@ -46,68 +49,76 @@ def sign_up():
         email=form.Email.data
         username=form.username.data
         # Form data us used to create an instance of User
-        noob = User(email=form.Email.data,
-            username=form.username.data,
-            password=form.password.data)
-        db.session.add(noob)
-        db.session.commit()
-        app.logger.debug('registred: ' + username + ' , ' + email)
+        noob = User(email = form.Email.data,
+                    username = form.username.data,
+                    password_hash = \
+                    utils.make_pw_hash_salt(\
+                        form.username.data, form.password.data))
+        noob.put()
+        print 'registred: ' + username + ' , ' + email
         flash(' welcome to the site %s' % username)
-        login_user(noob)
-        return redirect('/start', code=302)
+        utils.login_cookie_bake(noob)
+        return redirect(url_for('starter', username = username))
         # if statement done here, user is directed to their start page
 
     # this is where the page is built and renered before the form is filled out
     # the top posts by number of likes are extracted here to populate the 
-    # area below the form.
-    top_posts_results = db.session.query(Post, db.func.count(likes.c.user_id)\
-            .label('total'))\
-            .join(likes)\
-            .group_by(Post)\
-            .order_by('total DESC').all()
-    top_posts = [post_result.Post for post_result in top_posts_results]
+    # area below the form..
+    top_posts_results = Post.gql("").fetch(limit = 3)
 
+    top_posts = [post_result for post_result in top_posts_results]
+
+    print 'top_posts'
+    print top_posts
+    for p in top_posts:
+        print p.author
+    print form
     return render_template('register.html',
         top_posts = top_posts,
         form = form, 
         hfour ='>>\t \t \tsign up and start creating posts \t \t \t<<')
 
-
-@app.route('/register')
-@app.route('/')
-def to_start ():
+@app.route('/register', defaults={'username': None})
+@app.route('/', defaults={'username': None})
+def to_start (username):
     # this is essentially a home page, taking a user to the start page if they
     # have logged in and to the sign up page if they have not.
-    if current_user.is_authenticated:
-        return redirect('/start', code=302)
+    if utils.get_current_user():
+        return redirect(url_for('starter',\
+                        username = utils.get_current_user().username))
     else:
         return redirect('/sign_up', code=302)
 
 
-@app.route('/start', methods=['GET','POST'])
-@login_required
-def starter():
+@app.route('/start/<username>', methods=['GET','POST'])
+@utils.login_required
+def starter(username):
+    print 'at starter!'
     # The starter page shows a logged in user their posts, 
     # and renders a single field to start a post by entering the post name.
     add_form=DataForm()
-    add_form.tags.data = current_user.username
+    add_form.tags.data = utils.get_current_user().username
     if add_form.validate_on_submit():
         # when the post name is entered, forward the user on to write the 
         # other peices of the age
-        return redirect(url_for('add', post = add_form.url.data.strip('/')))
+        return redirect(url_for('add',\
+                        post = add_form.url.data.strip('/'),\
+                        username = username))
     else:
         print 'no form validation'
     return  render_template('user.html',
         form = add_form,
-        active_user = current_user, 
-        posts = Post.query.filter_by(user = current_user))
+        posts = Post.gql("WHERE author = :author",\
+                        author = utils.get_current_user()).fetch(limit = None))
 
 
-@app.route('/edit/<post>', methods=['GET','POST'])
-@login_required
-def add(post):
+@app.route('/edit/<username>/<post>', methods=['GET','POST'])
+@utils.login_required
+def add(post, username):
     # This page allows for both the adding and editing of post.
-    edit_post = Post.query.filter_by(url = '/' + post, user = current_user).first()
+    edit_post = Post.gql("WHERE url = :url AND author = :author",\
+                            url ='/' + post, \
+                            author = utils.get_current_user()).get()
     print 'edit post'
     print edit_post
     if edit_post:
@@ -116,87 +127,211 @@ def add(post):
         if post_edit_form.validate_on_submit():
             print "post_edit validated"
             post_edit_form.populate_obj(edit_post)
-            db.session.commit()
+            tags = post_edit_form.tags.data.split(',')
+            print 'tags'
+            print tags
+            print 'bef'
+            print edit_post.get_tags()
+
+            for old_tg in edit_post.get_tags():
+                # out with the old
+                print old_tg
+                print old_tg._posts
+                if old_tg.name not in tags:
+                    print old_tg.name
+                    print 'is not in tags'
+                    old_tg._posts.remove(edit_post.key())
+                    old_tg.put()
+
+            for tg in tags:
+                # in with the new (but no blank tags accdentally passed)
+                if tg:
+                    tg_obj = Tag.get_or_create(tg)
+                    if edit_post.key() not in tg_obj._posts:
+                        tg_obj._posts.append(edit_post.key())
+                    tg_obj.put()
+
+            edit_post.put()
+            print 'aft'
+            print edit_post.get_tags()
+
             flash(" the post'{}' has been edited".format(post_edit_form.url.data))
             return redirect(url_for('render_user_post', 
-                user = edit_post.user.username,
+                username = edit_post.author.username,
                 post_name = post_edit_form.url.data.strip('/')))
-        return render_template ('edit.html', form = post_edit_form, post = edit_post)
+        return render_template ('edit.html',\
+                                form = post_edit_form, post = edit_post)
     else:
         # the post does not exists in the database, and is rendered for creation.
-        start_post = Post(url = post)
+        start_post = Post(url = post, 
+                            author = utils.get_current_user())
+
         post_add_form = DataForm(obj=start_post)
         if post_add_form.validate_on_submit():
-            new_post = Post(
-                url = post_add_form.url.data,
-                content = post_add_form.content.data,
-                tags = post_add_form.tags.data,
-                user = current_user)
-            db.session.add(new_post)
-            db.session.commit()
+            new_post = Post(url = post_add_form.url.data,
+                            content = post_add_form.content.data,
+                            author = utils.get_current_user())
+            new_post.put()
+
+            tags = post_add_form.tags.data.split(',')
+            for tg in tags:
+                tg_obj = Tag.get_or_create(tg)
+                if new_post.key() not in tg_obj._posts:
+                    tg_obj._posts.append(new_post.key())
+                tg_obj.put()
+
+            print 'new post'
             print new_post
-            print db.session
-            flash(" the post'{}' has been created!".format(post_add_form.url.data))
+            print 'by...'
+            print new_post.author
+            print 'tags'
+            print tags
+
+            flash(" the post'{}' has been created!".format(\
+                    post_add_form.url.data))
+
             return redirect(url_for('render_user_post', 
-                user = new_post.user.username,
-                post_name = new_post.url.strip('/')))
-        return render_template('add.html', form=post_add_form, edit_post_result=edit_post)
+                            username = new_post.author.username,
+                            post_name = new_post.url.strip('/')))
+
+        return render_template('add.html',\
+                                form = post_add_form,\
+                                post = start_post)
+
+@app.route('/delete/<post>', methods=['GET','POST'])
+@utils.login_required
+def kill_post(post):
+    # page confirming the deletion of a post.
+    # this can be accessed from the edit page.
+    target_post = Post.gql("WHERE url = :url AND author = :author",\
+                            url ='/' + post, \
+                            author = utils.get_current_user()).get()
+
+    if not target_post:
+        abort(401)
+    if request.method == "POST":
+        target_post.delete()
+        flash(" '{}' is gone.".format(target_post.url))
+        return redirect(url_for('starter', username = target_post.author.username))
+    else:
+        flash('!! this will delete post')
+    return render_template('confirm_kill.html')
+
+@app.route('/<username>/<post_name>/', methods=['GET','POST'])
+def render_user_post(username, post_name):
+    author = User.gql("WHERE  username = :username",\
+                        username = username).get()
+    post = Post.gql("WHERE url = :url AND author = :author",\
+                     url ='/' + post_name, \
+                     author = author).get()
+    print 'posturl'
+    print post.url
+    if author and post:
+        comm_url = '/' + 'CommentOn__'+ post.url.strip('/')\
+                    + '_Num' + str(len(post.comments) + 1)
+        print 'commurl'
+        print comm_url
+        comment_form = DataForm(obj = Post(url = comm_url))
+        if comment_form.validate_on_submit():
+            print '!! new comment form validate'
+            comment = Post(url =  comm_url,
+                    content = comment_form.content.data,
+                    author = utils.get_current_user(),
+                    _is_comment = True)
+            comment.put()
+            post.comments.append(comment.key())
+            post.put()
+            print post
+            print comment
+            return render_template('user_post.html', 
+                                        post = post,
+                                        tags = post.get_tags(), 
+                                        form = comment_form,
+                                        comm_url = comm_url,
+                                        empty_list = [])
 
 
-@app.route('/<user>/<post_name>')
-def render_user_post(user, post_name):
-    #  retrieve and show the post
-    author = User.query.filter_by(username = user).first()
-    post = Post.query.filter_by(url = '/' + post_name, user = author).first_or_404()
-    print 'post author'
-    print author
-    print 'post get'
-    print post
-    if post:
         return render_template('user_post.html', 
-            post = post,
-            active_user = current_user)
+                                    post = post,
+                                    tags = post.get_tags(), 
+                                    form = comment_form,
+                                    comm_url = comm_url,
+                                    empty_list = [])
+    else:
+        abort(404)
+
+@app.route('/<username>/<post_name>/edit/<edit_comment_url>', methods=['GET','POST'])
+def render_and_edit_comment(username, post_name, edit_comment_url):
+    author = User.gql("WHERE  username = :username",\
+                        username = username).get()
+    post = Post.gql("WHERE url = :url AND author = :author",\
+                     url ='/' + post_name, \
+                     author = author).get()
+    edit_comment = Post.gql("WHERE _is_comment = True"+\
+                                " AND url = :url", url = '/' + edit_comment_url).get()
+    if author and post and edit_comment:
+        print '!! edit comment form validate'
+        comment_form = DataForm(obj = edit_comment)
+        comm_url = edit_comment_url
+        if comment_form.validate_on_submit():
+            comment_form.populate_obj(edit_comment)
+            edit_comment.put()
+            print post
+            print edit_comment
+
+            return render_template('user_post.html', 
+                                        post = post,
+                                        tags = post.get_tags(), 
+                                        form = comment_form,
+                                        comm_url = comm_url,
+                                        empty_list = [])
+
+
+        return render_template('user_post.html', 
+                                    post = post,
+                                    tags = post.get_tags(), 
+                                    form = comment_form,
+                                    comm_url = comm_url,
+                                    empty_list = [])
+    else:
+        print 'missing one'
+        print author
+        print post
+        print edit_comment
+        abort(404)
 
 
 @app.route('/tags/<tag>')
 def catch_tag(tag):
     # render a page allowing the user to navigate posts by tag.
-    target_tag=Tag.query.filter_by(name=tag).first_or_404()
-    return render_template('tag_post.html', tag=target_tag)
+    target_tag=Tag.gql("WHERE name = :tag", tag = tag).get()
+    print 'posts'
+    print target_tag.get_posts()
+    return render_template('tag_post.html', tag = target_tag)
 
-@app.route('/like/<user>/<post_name>')
-@login_required
-def like(user, post_name):
+@app.route('/all_tags')
+def all_tags():
+    print Tag.all().fetch(limit = None)
+    return render_template( 'All_Tags.html', tags = Tag.all().fetch(limit = None))
+
+@app.route('/like/<username>/<post_name>')
+@utils.login_required
+def like(username, post_name):
     # nothing is rendered here, this is simply the route for liking a page.
     # once successful, the original page is re - rendered.
-    author = User.query.filter_by(username = user).first()
-    like_post = Post.query.filter_by(url = '/' + post_name, user = author).first_or_404()
-    like_post._liked.append(current_user)
+    author = User.gql("WHERE  username = :username", username = username).get()
+    like_post = Post.gql("WHERE url = :url AND author = :author",\
+                    url ='/' + post_name,\
+                    author = author).get()
+    like_post._liked.append(utils.get_current_user().key())
+    like_post.put()
     # as noted in the models, liked is a list of user objects, 
     # which is why append is used. the original attribute does not need to be 
     # overwritten.
-    db.session.commit()
-    flash(" liked  '{}'".format(post_name))
+    flash(" liked  '{}'".format(like_post.url))
     return redirect(url_for('render_user_post', 
-        user = user,
+        username = username,
         post_name = post_name))
-
-@app.route('/delete/<int:post_id>', methods=['GET','POST'])
-@login_required
-def kill_post(post_id):
-    # page confirming the deletion of a post.
-    # this can be accessed from the edit page.
-    target_post = Post.query.get_or_404(post_id)
-    if current_user != target_post.user:
-        abort(401)
-    if request.method == "POST":
-        db.session.delete(target_post)
-        db.session.commit()
-        flash(" '{}' is gone.".format(target_post.url))
-        return redirect(url_for('starter'))
-    else:
-        flash('!! this will delete post')
-    return render_template('confirm_kill.html')
 
 
 # error hanlders are standard.
@@ -212,7 +347,8 @@ def unauth(e):
 
 
 @app.errorhandler(500)
-def unauth(e):
+@app.errorhandler(501)
+def internal_error(e):
     return render_template('500.html', error = e), 500
 
 

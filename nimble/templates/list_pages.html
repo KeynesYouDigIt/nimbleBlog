@@ -1,28 +1,30 @@
 {% block sidebar %}
 	{% for page in pgs %}
-	<hr>
-	<a class="header" href=" /{{page.user.username + page.url}}">
-		<font size=4>
-		{{page.url | truncate(30, killwords=True)}}
-		</font>
-	</a>
-	<br>
-		by {{ page.user.username }}
-	<br><br>
-	<span class="tags">
-		<em>tags</em> ||
-		{% if page.tags %}
-			{% for tg in page._tags %}
-			<a href="{{ url_for('catch_tag', tag = tg.name) }}"> {{ tg.name }} </a>
-			{% endfor %}
-		{% endif %}
-		<br><br><em>
-		{%if page.user == active_user %}
-			<a target="_blank" href="{{ url_for('add', post=page.url.strip('/')) }}"> edit me </a>
-		{%endif%}
-		</em><br>
-	</span>
-	<hr>
+		{% if not page._is_comment%}
+			<hr>
+			<a class="header" href=" /{{page.author.username + page.url}}">
+				<font size=4>
+				{{page.url | truncate(30, killwords=True)}}
+				</font>
+			</a>
+			<br>
+				by {{ page.author.username }}
+			<br><br>
+			<span class="tags">
+				<em>tags ||
+				{% if page.get_tags() %}
+					{% for tg in page.get_tags() %}
+					<a href="{{ url_for('catch_tag', tag = tg.name) }}"> {{ tg.name }} </a> &nbsp
+					{% endfor %}
+				{% endif %}
+				<br><br>
+				{%if page.author == config.current_user %}
+					<a target="_blank" href="{{ url_for('add', post=page.url.strip('/')) }}"> edit me </a>
+				{%endif%}
+				</em><br>
+			</span>
+			<hr>
+        {% endif %}
 	{% endfor %}
 {% endblock %}
 </ul>

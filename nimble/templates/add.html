@@ -24,7 +24,7 @@
 {% endblock %}
 
 {% block sidebar%}
-<a href="{{ url_for('starter') }}"> nevermind.</a>
+<a href="{{ url_for('starter', username = post.author.username) }}"> nevermind.</a>
 {% endblock %}
 
 {% block scripts %}

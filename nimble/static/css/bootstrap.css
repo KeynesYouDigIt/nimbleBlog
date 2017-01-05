@@ -49,10 +49,6 @@ template {
 a {
   background-color: transparent;
 }
-a:active,
-a:hover {
-  outline: 0;
-}
 abbr[title] {
   border-bottom: 1px dotted;
 }
@@ -919,16 +915,7 @@ textarea {
   font-size: inherit;
   line-height: inherit;
 }
-a {
-  background-color: #111;
-  color: #FFFFFF; /*#337AB7;*/
-  padding: 3px 7px 7px 3px;
-}
-a:hover,
-a:focus {
-  color: #696969;
-  text-decoration: underline;
-}
+
 figure {
   margin: 0;
 }

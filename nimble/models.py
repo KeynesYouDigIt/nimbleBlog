@@ -1,74 +1,9 @@
-"""This file creates models, 
-which are passed to the router in views.py to take form data and store it.
-
-configurations are in init.py and initial tasks for setup are in db_switch.py"""
-from nimble import db
-from flask_login import UserMixin
+from google.appengine.ext import db
 from werkzeug.security import check_password_hash, generate_password_hash
+import hashlib
 
-"""these first 2 tables are created for many to many relationships between 
-posts and tags as well ass users that like posts and posts"""
-
-tags = db.Table('post_tag', 
-    db.Column('tag_id', db.Integer, db.ForeignKey('tag.id')), 
-    db.Column('post_id', db.Integer, db.ForeignKey('post.id')))
-
-likes = db.Table('post_likes',
-    db.Column('user_id', db.Integer, db.ForeignKey('user.id')),
-    db.Column('post_id', db.Integer, db.ForeignKey('post.id')))
-
-class Post(db.Model):
-    """This model allows post storage.
-
-    id is an auto incrementing primary key
-
-    url will be like the name of the post with a '/' added for easy routing
-    and a web aesthetic when displayed.
-
-    content is an open text field containing the content of the post 
-    with no restrictions.
-
-    u_t_id links Users to posts
-
-    _tags links tags to posts
-
-    _liked stores a list of Users that have liked a post
-    """
-    id = db.Column(db.Integer, primary_key=True)
-    url = db.Column(db.Text, nullable=False)
-    content = db.Column(db.Text, nullable=True)
-    u_t_id = db.Column(db.Integer, 
-        db.ForeignKey('user.id'), 
-        nullable = False)
-    _tags = db.relationship('Tag', 
-        secondary = tags, 
-        lazy = 'joined', 
-        backref = db.backref('psts', lazy='dynamic'))
-    _liked = db.relationship('User',
-        secondary=likes,
-        lazy='joined',
-        backref = db.backref('likes', lazy='dynamic'))
-
-    @property
-    def tags(self):
-        return ','.join([ t.name for t in self._tags ])
-
-    @tags.setter
-    def tags(self, string):
-        if string:
-            self._tags = [Tag.get_or_create(name) for name in string.split(',')]
-        else:
-            self._tags = []
-
-    def __repr__(self):
-        return "content and url of post:"+\
-        "'{}': '{}' || '{}'".format(self.content, self.url, self._tags)
-
-
-class User(db.Model, UserMixin):
+class User(db.Model):
     """This model allows user storage.
-
-    id is an auto incrementing primary key
 
     username is a username, must be provided and unique
 
@@ -78,52 +13,133 @@ class User(db.Model, UserMixin):
 
     password_hash is the encrypted storage of the user password
     """
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=False)
-    posts = db.relationship('Post', backref='user', lazy='dynamic')
-    password_hash = db.Column(db.String)
+    username = db.StringProperty(required = True)
+    email = db.StringProperty()
+    password_hash = db.StringProperty(required = True)
 
+    # the below helps flask login work normally in init and views
     @property
-    def password(self):
-        raise AttributeError('password: write-only field')
+    def id(self):
+        self.key().id()
 
-    @password.setter
-    def password(self, password):
-        self.password_hash = generate_password_hash(password)
+    def to_dict(self):
+       return dict([(p, unicode(getattr(self, p))) for p in self.properties()])
 
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
+    # end UserMixin attrs
 
-    @staticmethod
-    def get_by_username(username):
-        return User.query.filter_by(username=username).first()
+    def check_password(self, password_provided):
+        '''h is a preixisting (hash,salt) tuple'''
+        pass_salt = self.password_hash.split(',')
+        return pass_salt[0] == hashlib.sha256(\
+            self.username + password_provided + pass_salt[1]).hexdigest()
+
+
+    def get_liked(self):
+        return [post for post in Post.all().fetch(limit=None) if self in post.get_likers()]
+    
 
     def __repr__(self):
-        return "<id|'{}' username : email '{}' : '{}'>".format(\
-            self.id, self.username, self.email)
+        return "< username : email '{}' : '{}' >".format(self.username, self.email)
 
+class Post(db.Model):
+    """This model allows post storage.
+
+    url will be like the name of the post with a '/' added for easy routing
+    and a web aesthetic when displayed.
+
+    content is an open text field containing the content of the post 
+    with no restrictions.
+
+    author links Users to posts
+
+    _tags links tags to posts
+
+    _liked stores a list of Users that have liked a post
+    """
+    url = db.StringProperty(required = True)
+    content = db.StringProperty(multiline = True)
+    author = db.ReferenceProperty(User)
+    comments = db.ListProperty(db.Key)
+    _liked = db.ListProperty(db.Key)
+    _is_comment = db.BooleanProperty()
+
+    def get_likers(self):
+        likers = []
+        for k in self._liked:
+            if User.get_by_id(k.id()):
+                likers.append(User.get_by_id(k.id()))
+            else:
+                self._liked.remove(k)
+        return likers
+
+    def get_comments(self):
+        list_of_comments = []
+        for p in self.comments:
+            if Post.get_by_id(p.id()):
+                print 'got'
+                print Post.get_by_id(p.id())
+                list_of_comments.append(Post.get_by_id(p.id()))
+            else:
+                self.comments.remove(p)
+                'removed' + str(p)
+        self.put()
+        print 'list o comments'
+        print list_of_comments
+        return list_of_comments
+
+
+    def get_tags(self, just_names = False):
+        tags_on_post = set()
+        for tg in Tag.all():
+            if self.key() in tg._posts:
+                tags_on_post.add(tg)
+        if just_names:
+            return [str(t.name) for t in tags_on_post]
+        return tags_on_post
+
+
+    def __repr__(self):
+        return "content and url of post:"+\
+        "'{1}': '{0}' -- by {2}'".format(self.content, self.url, self.author)
+
+# class Comment(db.Model):
+#     """This model allows comment storage
+    
+#     only stores comment, commenter, and post.
+#     """
+#     content = db.StringProperty(required = True)
+#     commenter = db.ReferenceProperty(User)
+#     post = db.ReferenceProperty(Post)
 
 class Tag(db.Model):
     """This model allows tag storage.
 
-    id is an auto incrementing primary key
-
     name is the tag as a string
     """
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(25), nullable=False, unique=True, index=True)
+    name = db.StringProperty(required = True)
+    _posts = db.ListProperty(db.Key)
 
-    @staticmethod
-    def get_or_create(name):
-        try:
-            return Tag.query.filter_by(name=name).one()
-        except:
-            return Tag(name=name)
 
-    @staticmethod
-    def all():
-        return Tag.query.all()
+    @classmethod
+    def get_or_create(cls, name):
+        get_tag = Tag.gql("WHERE name = :tag_name", tag_name = name).get()
+        if not get_tag:
+            get_tag = cls(name = name)
+            get_tag.put()
+        print  'get tag from classmethod'       
+        return get_tag
+
+
+    def get_posts(self):
+        list_of_posts = []
+        for p in self._posts:
+            if Post.get_by_id(p.id()):
+                list_of_posts.append(Post.get_by_id(p.id()))
+            else:
+                self._posts.remove(p)
+        print list_of_posts
+        return list_of_posts
+
 
     def __repr__(self):
-        return "<id|'{}', tag string|'{}'>".format(self.id, self.name)
+        return "< tag string {0} >".format(self.name)

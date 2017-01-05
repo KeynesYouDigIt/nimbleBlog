@@ -7,31 +7,48 @@ and login configurations"""
 import os
 
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy, SignallingSession
-from flask_login import LoginManager
+from google.appengine.ext import db
+
 from flask_debugtoolbar import DebugToolbarExtension
+
+db = db
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.urandom(24)
+
+Flask.current_app = app
+
+app.config['SECRET_KEY'] = os.urandom(35)
 app.config['DEBUG'] = True
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' +\
 os.path.join(basedir, 'nimble.db')
-
-db = SQLAlchemy(app)
-
-login_manager = LoginManager()
-login_manager.session_protection = 'strong'
-login_manager.login_view = 'to_start'
-login_manager.init_app(app)
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
     
 toolbar = DebugToolbarExtension(app)
 
-import models
 from models import *
-import views
+
+# a ghost user is created since the login validation and some user lookup 
+# methods need a user to work at all. the "ghost" is logged in, 
+# but does not have a session hash string, allowing explicit testing of
+# login status.
+
+ghost_user = User.gql("WHERE  username = :username", username = '83928482956').get()
+print 'ghost user get'
+print ghost_user
+
+if not ghost_user:
+    ghost_user = User(email = 'ghost@ghost.org',
+                    username = '83928482956',
+                    password_hash = '__')
+    ghost_user.put()
+    ghost_user = User.gql(\
+        "WHERE  username = :username", username = '83928482956').get()
+    print '! ghost_user added'
+
+app.config['current_user'] = ghost_user
+print 'ghost user set'
+print 'dir app'
+print dir(app.app_context())
+
 from views import *
