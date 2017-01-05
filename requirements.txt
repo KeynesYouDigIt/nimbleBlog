@@ -14,7 +14,7 @@ Flask-SQLAlchemy==2.1
 Flask-WTF==0.13.1
 isort==4.2.5
 itsdangerous==0.24
-Jinja2==2.8
+Jinja2==2.6
 lazy-object-proxy==1.2.2
 Mako==1.0.6
 MarkupSafe==0.23
