@@ -55,6 +55,8 @@ def sign_up():
                     utils.make_pw_hash_salt(\
                         form.username.data, form.password.data))
         noob.put()
+        print 'result on signup put'
+        print dir(noob.put())
         print 'registred: ' + username + ' , ' + email
         flash(' welcome to the site %s' % username)
         utils.login_cookie_bake(noob)

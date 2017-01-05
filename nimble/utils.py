@@ -32,7 +32,12 @@ def is_logged_in():
     if 'user' in session.keys():
         print "app.config['current_user']"
         print app.config['current_user']
+        print 'session'
+        print session
         query_user = User.gql("WHERE username = :u", u = session['user'][0]).get()
+        if not query_user:
+            print   query_user
+            raise   'user not found, here is get'
         if query_user != ghost_user and\
             session['user'][1] == \
                 hashlib.sha256(query_user.password_hash[2:5]).hexdigest():

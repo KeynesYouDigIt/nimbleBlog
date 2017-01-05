@@ -18,7 +18,8 @@ class SignupForm(Form):
 
     email is strictly optional, can be used for multiple accounts. 
     This is because the site proritizes flexibility and anonymnity over 
-    saftey or user workflow control """
+    saftey or user workflow control.
+    """
 
     username = StringField('username&nbsp',
                     validators=[
@@ -49,8 +50,11 @@ class SignupForm(Form):
 
     def validate_username(self,username_field):
         print 'check for user name'
-        print User.gql("WHERE  username = :username", username = username_field.data).get()
-        if User.gql("WHERE  username = :username", username = username_field.data).get():
+        print User.gql("WHERE  username = :username", \
+            username = username_field.data).get()
+
+        if User.gql("WHERE  username = :username", \
+            username = username_field.data).get():
             raise ValidationError('somebody beat you to that username.'+\
                 'Common, be original!')
 
@@ -58,7 +62,8 @@ class SignupForm(Form):
 class LoginForm(Form):
     """typical login  form.
     remember_me boolean sends a cookie to keep the login session for 
-    500 days or until cookies are cleared. """
+    500 days or until cookies are cleared. 
+    """
 
     username = StringField('Username &nbsp', 
         [InputRequired(message='dude. put something here. anything.')])
@@ -66,7 +71,8 @@ class LoginForm(Form):
     password = PasswordField('Password &nbsp', 
         [InputRequired(message='dude. put something here. anything.')])
 
-    remember_me = BooleanField('<font size="1">gimmie a cookie to keep me logged in</font> &nbsp  &nbsp', default = True)
+    remember_me = BooleanField('<font size="1">gimmie a cookie to keep me"+\
+                                " logged in</font> &nbsp  &nbsp', default = True)
 
     submit = SubmitField('Log In')
 
@@ -85,6 +91,7 @@ class DataForm(Form):
     The last few lines in validation 
     prevent seperate records for the same tag. 
     """
+    
     url = StringField('enter the name here for the post   _> &nbsp', 
         [InputRequired(message='dude. put something here. anything.')])
 
