@@ -11,6 +11,17 @@ from google.appengine.ext import db
 
 from flask_debugtoolbar import DebugToolbarExtension
 
+import jinja2
+
+from jinja2.filters import do_map
+
+template_dir = os.path.join(os.path.dirname(__file__), 'templates')
+
+jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir),
+                               autoescape=True)
+
+jinja_env.filters['map'] = do_map
+
 db = db
 
 basedir = os.path.abspath(os.path.dirname(__file__))
