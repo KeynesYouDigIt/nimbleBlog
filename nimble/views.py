@@ -55,8 +55,8 @@ def sign_up():
                     utils.make_pw_hash_salt(\
                         form.username.data, form.password.data))
         noob.put()
-        print 'result on signup put'
-        print dir(noob.put())
+        print 'put result'
+        print db.get(noob.key())
         print 'registred: ' + username + ' , ' + email
         flash(' welcome to the site %s' % username)
         utils.login_cookie_bake(noob)
@@ -144,6 +144,8 @@ def add(post, username):
                     print 'is not in tags'
                     old_tg._posts.remove(edit_post.key())
                     old_tg.put()
+                    print 'put result for removed tag'
+                    print db.get(old_tg.key())
 
             for tg in tags:
                 # in with the new (but no blank tags accdentally passed)
@@ -152,9 +154,12 @@ def add(post, username):
                     if edit_post.key() not in tg_obj._posts:
                         tg_obj._posts.append(edit_post.key())
                     tg_obj.put()
+                    print 'put result for tag'
+                    print db.get(tg_obj.key())
+
 
             edit_post.put()
-            print 'aft'
+            print 'get tags on edit post'
             print edit_post.get_tags()
 
             flash(" the post'{}' has been edited".format(post_edit_form.url.data))
@@ -174,24 +179,21 @@ def add(post, username):
                             content = post_add_form.content.data,
                             author = utils.get_current_user())
             new_post.put()
-
             tags = post_add_form.tags.data.split(',')
             for tg in tags:
-                tg_obj = Tag.get_or_create(tg)
-                if new_post.key() not in tg_obj._posts:
-                    tg_obj._posts.append(new_post.key())
-                tg_obj.put()
+                if tg:
+                    tg_obj = Tag.get_or_create(tg)
+                    if new_post.key() not in tg_obj._posts:
+                        tg_obj._posts.append(new_post.key())
+                    tg_obj.put()
+                    print 'tag put result'
+                    db.get(tg_obj.key())
 
-            print 'new post'
-            print new_post
-            print 'by...'
-            print new_post.author
-            print 'tags'
-            print tags
+            print 'new post put result'
+            print db.get(new_post.key())
 
             flash(" the post'{}' has been created!".format(\
                     post_add_form.url.data))
-
             return redirect(url_for('render_user_post', 
                             username = new_post.author.username,
                             post_name = new_post.url.strip('/')))
@@ -226,8 +228,6 @@ def render_user_post(username, post_name):
     post = Post.gql("WHERE url = :url AND author = :author",\
                      url ='/' + post_name, \
                      author = author).get()
-    print 'posturl'
-    print post.url
     if author and post:
         comm_url = '/' + 'CommentOn__'+ post.url.strip('/')\
                     + '_Num' + str(len(post.comments) + 1)
@@ -241,10 +241,12 @@ def render_user_post(username, post_name):
                     author = utils.get_current_user(),
                     _is_comment = True)
             comment.put()
+            print 'comment put result'
+            print db.get(comment.key())
             post.comments.append(comment.key())
             post.put()
-            print post
-            print comment
+            print 'post put result'
+            print db.get(post.key())
             return render_template('user_post.html', 
                                         post = post,
                                         tags = post.get_tags(), 
@@ -278,8 +280,8 @@ def render_and_edit_comment(username, post_name, edit_comment_url):
         if comment_form.validate_on_submit():
             comment_form.populate_obj(edit_comment)
             edit_comment.put()
-            print post
-            print edit_comment
+            print 'comment edited comment put result'
+            print db.get(edit_comment.key())
 
             return render_template('user_post.html', 
                                         post = post,
@@ -327,6 +329,8 @@ def like(username, post_name):
                     author = author).get()
     like_post._liked.append(utils.get_current_user().key())
     like_post.put()
+    print 'post liked'
+    print db.get(like_post.key())
     # as noted in the models, liked is a list of user objects, 
     # which is why append is used. the original attribute does not need to be 
     # overwritten.
