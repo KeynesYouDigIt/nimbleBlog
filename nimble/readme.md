@@ -1,3 +1,5 @@
+This is a project for the Udacity program dealing with databases an Authentication
+
 #Welcome to nimble blog.
 
 ##getting started with development is easy.
