@@ -1,4 +1,22 @@
+'''models.py represents the fairly standard blogging database schema, 
+upon which Nimble blg is built.
 
+Originaly written in SQL Alchemy, 
+and rebuilt for the Google app engine datastore.
+
+All functionality is derived from User, Post, and Tag objects.
+
+Likes are a list of Users on Posts, Tags contain a list of Posts, etc.
+
+One quirk to note is that comments are Posts listed in Posts. A field in each
+Post instance stores whether or not a post is considered a comment. 
+
+The advantage is a simplified database model and the inherent possibilty to 
+expand features to both comments and posts, with the caveat being that posts and
+comments are not in different tables and must be distinguished in the code only
+by the _is_comment field.
+
+'''
 
 from google.appengine.ext import db
 
@@ -19,27 +37,31 @@ class User(db.Model):
     email = db.StringProperty()
     password_hash = db.StringProperty(required = True)
 
-    # the below helps flask login work normally in init and views
     @property
     def id(self):
+        # set id for direct retrieval
         self.key().id()
 
     def to_dict(self):
+        # create a dictionary with instance properties
        return dict([(p, unicode(getattr(self, p))) for p in self.properties()])
 
-    # end UserMixin attrs
-
     def check_password(self, password_provided):
-        '''h is a preixisting (hash,salt) tuple'''
+        '''Returns a boolean of whether a provided password can be hashed and 
+        match the stored password hash, thus checking if passwords match without
+        any plain text password storage.
+        '''
         pass_salt = self.password_hash.split(',')
+        # pasword hash containst the salt and the hash, hence to return true we
+        # must use both the password at [0] and the salt at [1] from the object
+        # generated above.
         return pass_salt[0] == hashlib.sha256(\
             self.username + password_provided + pass_salt[1]).hexdigest()
 
-
     def get_liked(self):
+        # returns a list of posts the user has liked.
         return [post for post in Post.all().fetch(limit=None) if self in post.get_likers()]
     
-
     def __repr__(self):
         return "< username : email '{}' : '{}' >".format(self.username, self.email)
 
@@ -66,6 +88,9 @@ class Post(db.Model):
     _is_comment = db.BooleanProperty()
 
     def get_likers(self):
+        '''Returns a list of of users listed as liking this post, removing any
+        user accounts that cannot be retrieved (were deleted).
+        '''
         likers = []
         for k in self._liked:
             if User.get_by_id(k.id()):
@@ -75,22 +100,30 @@ class Post(db.Model):
         return likers
 
     def get_comments(self):
+        '''Returns a list of Post objects that were created as comments on 
+        this post.
+
+        Removes any posts accounts that cannot be retrieved (were deleted).
+        '''
         list_of_comments = []
         for p in self.comments:
             if Post.get_by_id(p.id()):
-                print 'got'
-                print Post.get_by_id(p.id())
                 list_of_comments.append(Post.get_by_id(p.id()))
             else:
                 self.comments.remove(p)
-                'removed' + str(p)
         self.put()
-        print 'list o comments'
-        print list_of_comments
         return list_of_comments
 
 
     def get_tags(self, just_names = False):
+        '''Returns a set of tags affiliated with the post.
+
+        A set is used instead of a list since accidental double tagging isn't
+        explicitly prohibited.
+
+        The just_names boolean arg allows this method to be used to get a set 
+        of tag names rather than the full object.
+        '''
         tags_on_post = set()
         for tg in Tag.all():
             if self.key() in tg._posts:
@@ -99,24 +132,16 @@ class Post(db.Model):
             return [str(t.name) for t in tags_on_post]
         return tags_on_post
 
-
     def __repr__(self):
         return "content and url of post:"+\
         "'{1}': '{0}' -- by {2}'".format(self.content, self.url, self.author)
 
-# class Comment(db.Model):
-#     """This model allows comment storage
-    
-#     only stores comment, commenter, and post.
-#     """
-#     content = db.StringProperty(required = True)
-#     commenter = db.ReferenceProperty(User)
-#     post = db.ReferenceProperty(Post)
 
 class Tag(db.Model):
     """This model allows tag storage.
 
-    name is the tag as a string
+    name is the tag as a string.
+    _posts tracks posts affiliated with the tag.
     """
     name = db.StringProperty(required = True)
     _posts = db.ListProperty(db.Key)
@@ -124,6 +149,8 @@ class Tag(db.Model):
 
     @classmethod
     def get_or_create(cls, name):
+        '''This function returns an existing tag if the tag exists,
+        and creates a new tag if it does not. '''
         get_tag = Tag.gql("WHERE name = :tag_name", tag_name = name).get()
         if not get_tag:
             get_tag = cls(name = name)
@@ -133,6 +160,9 @@ class Tag(db.Model):
 
 
     def get_posts(self):
+        '''Returns a list of posts affiliated with the tag.
+        Removes any posts accounts that cannot be retrieved (were deleted).
+        '''
         list_of_posts = []
         for p in self._posts:
             if Post.get_by_id(p.id()):

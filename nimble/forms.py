@@ -1,6 +1,7 @@
-"""This file creates classes, 
+"""forms.py creates forms as classes, 
 which are passed to the router in views.py as displayable objects passed 
-to Jinja for rendering."""
+to Jinja for rendering.
+"""
 
 from flask_wtf import Form
 from wtforms.fields import StringField, PasswordField, \
@@ -8,7 +9,6 @@ BooleanField, SubmitField, TextAreaField
 from wtforms.validators import *
 from wtforms import ValidationError
 from .models import *
-from wtforms.fields.html5 import URLField
 
 class SignupForm(Form):
     """typical user registration form.

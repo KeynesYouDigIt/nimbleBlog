@@ -3,7 +3,9 @@
 	<em>Click a tag to see related posts </em><br><br><br>
 	<font size="5">
 		{% for tg in tags %}
-		<a href="{{ url_for('catch_tag', tag = tg.name) }}"> {{ tg.name }} </a> <br>
+		<a href="{{ url_for('catch_tag', tag = tg.name) }}"> 
+		{{ tg.name }} 
+		</a> <br>
 		{% endfor %}
 	</font>
 {% endblock %}

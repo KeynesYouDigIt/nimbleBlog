@@ -13,7 +13,8 @@
           <br><br>--<br>
 
           {% if config.current_user.key() == post.author.key() %}
-            <a href="{{ url_for('add', post=post.url.strip('/'), username = post.author.username) }}"> edit this post 
+            <a href="{{ url_for('add', post=post.url.strip('/'), username = post.author.username) }}"> 
+            edit this post 
             </a>
           {% endif  %}
           <br><br>
@@ -85,15 +86,4 @@
       </section>
       </div>
     </div>
-{% endblock %}
-
-{% block scripts %}
-{{super()}}
-<script src="{{ url_for('static', filename='js/vendor/select2.min.js') }}"></script>
-<script>
-$(document).ready(function(){
-    var _tags = {{ all_tags()|map(attribute='name')|list|tojson|safe }};
-    $('#tags').select2({tags: _tags, tokenSeparators: [",", " "]});
-});
-</script>
 {% endblock %}

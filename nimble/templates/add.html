@@ -27,13 +27,19 @@
 <a href="{{ url_for('starter', username = post.author.username) }}"> nevermind.</a>
 {% endblock %}
 
+<!-- script notes - the below is a short JS script that works with select2 to create
+a tag form that dynamically shows and lets users select pre existing tags.
+-->
 {% block scripts %}
 {{super()}}
 <script src="{{ url_for('static', filename='js/vendor/select2.min.js') }}"></script>
 <script>
 $(document).ready(function(){
     var _tags = {{ all_tags()|map(attribute='name')|list|tojson|safe }};
-    $('#tags').select2({tags: _tags, tokenSeparators: [",", " "]});
+    //create var as a JS list of tag names
+
+    $('#tags').select2({tags: _tags, tokenSeparators: [","]});
+    //map list created above to tags element
 });
 </script>
 {% endblock %}

@@ -36,7 +36,10 @@
 <script>
 $(document).ready(function(){
     var _tags = {{ all_tags()|map(attribute='name')|list|tojson|safe }};
-    $('#tags').select2({tags: _tags, tokenSeparators: [",", " "]});
+    //create var as a JS list of tag names
+
+    $('#tags').select2({tags: _tags, tokenSeparators: [","]});
+    //map list created above to tags element
 });
 </script>
 {% endblock %}
